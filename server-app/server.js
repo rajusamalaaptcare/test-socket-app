@@ -1,25 +1,32 @@
-const express = require('express');
-const http = require('http');
 const WebSocket = require('ws');
+const http = require('http');
 
-const app = express();
-const server = http.createServer(app);
+const server = http.createServer();
 const wss = new WebSocket.Server({ server });
 
-wss.on('connection', function connection(ws) {
+const messages = [];
+
+wss.on('connection', (ws) => {
   console.log('Client connected');
 
-  ws.on('message', function incoming(message) {
-    console.log('Received:', message);
-    // Broadcast received message to all clients
-    wss.clients.forEach(function each(client) {
-      if (client !== ws && client.readyState === WebSocket.OPEN) {
-        client.send(message);
+  ws.on('message', (message) => {
+      const decodedMessage = message.toString('utf-8');
+
+    console.log('Received message:', message);
+    console.log('Decoded message:', decodedMessage);
+    messages.push(decodedMessage);
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(messages));
       }
     });
   });
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+  });
 });
 
-server.listen(8080, function() {
-  console.log('Server is listening on port 8080');
+server.listen(8080, () => {
+  console.log('Server listening on port 8080');
 });
